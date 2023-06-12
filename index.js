@@ -1,7 +1,6 @@
 const express = require('express')
 const socketserver = require('ws')
 const child_process = require('child_process')
-const process = require('process')
 const app = express()
 
 // Server open
@@ -18,14 +17,19 @@ wss.on('connection', (ws) => {
     // send message
     ws.on('message', (message) => {
         console.log('message:', message.toString())
-        if (message.toString() == "true")
+        if (message.toString() == "true") {
             ws.send('turn on')
-        // TO DO (child_hood => camera)
-
-        else if (message.toString() == "false")
+            //cam
+            cam('true')
+        }
+        else if (message.toString() == "false") {
             ws.send("turn off")
-        else
+            //
+            cam('false')
+        }
+        else {
             ws.send('invalid control')
+        }
     })
 
     // close
@@ -36,20 +40,40 @@ wss.on('connection', (ws) => {
 })
 
 // Yolov8
-function cam(){
-    let process = child_process.spawn('python',[
-        "./cam/cam.py"
+function cam(state) {
+    let process_cam = child_process.spawn('python', [
+        "./cam/cam.py", state
     ])
 
-    process.stdout.on('data',(data)=>{
+    process_cam.stdout.on('data', (data) => {
         console.log(data)
-        if(data == 'true'){
+        // identify velocity
+        if (data == 'true') {
             // drive
-            
+            gpio()
+        }
+        else if (data == 'false') {
+            gpio()
         }
     })
 
-    process.stderr.on('data', (data)=>{
+    process_cam.stderr.on('data', (data) => {
         console.error(data)
     })
+}
+
+// GPIO
+function gpio() {
+    let process_gpio = child_process.spawn('sudo', [
+        "./gpio/setGPIO.o",
+    ])
+
+    process_gpio.stdout.on('data', (data)=>{
+        console.log(data)
+    })
+
+    process_gpio.stderr.on('data', (data)=>{
+        console.log(data)
+    })
+
 }
